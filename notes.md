@@ -1,0 +1,83 @@
+
+setx OPENAI_API_KEY "your_api_key_here"
+
+
+cd djangoProjects\project1       
+
+Running Django Applications on Different Ports
+By default, Django runs on port 8000 when you use the development
+server (python manage.py runserver). To run multiple Django applications,
+you need to specify a different port for each application.
+
+py manage.py runserver 8001
+
+ctrl + shift + p
+cd project1
+
+
+python manage.py collectstatic
+cd djangoProjects\project1>.\audiotrnas\Scripts\activate
+
+pip list --outdated
+pip install -r requirements.txt
+pip freeze > requirements.txt
+python -m venv audiotrnas
+
+
+ - run Django server using batch file runproject1.bat and start project1 
+.\runproject1
+
+
+python manage.py startapp project1
+
+github command to activate enviroment
+source  ./audiotrnas/Scripts/activate
+source  ./webtoolenv/bin/activate
+
+---Start App
+PS D:\Projects\Django---Simple-Web-Tools> ./audiotrnas/Scripts/activate
+(audiotrnas) PS D:\Projects\Django---Simple-Web-Tools> .\runproject1
+The system cannot find the path specified.
+Watching for file changes with StatReloader
+Performing system checks...
+
+D:\Projects\Django---Simple-Web-Tools\
+Base Path - D:\Projects\Django---Simple-Web-Tools\app1
+System check identified no issues (0 silenced).
+February 11, 2025 - 23:03:22
+Django version 5.0.8, using settings 'project1.settings'
+Starting development server at http://127.0.0.1:8001/
+Quit the server with CTRL-BREAK.
+---
+
+python manage.py makemigrations
+python manage.py migrate
+python manage.py showmigrations
+python manage.py shell
+
+
+pip install aspose-pdf
+pip install SpeechRecognition - speech_recognition
+pip install yt_dlp
+pip install aspose-pdf
+pip install pytube
+pip install moviepy
+pip install SpeechRecognition
+pip install openpyxl
+pip install pandas
+
+
+python -m notebook
+
+
+py -3.14 manage.py runserver
+
+
+
+## Python Anywhere 
+- mkvirtualenv --python=python3.10 myenv
+- unzip Django-Simple-Web-Tools.zip
+- unzip Django<press Tab key>
+
+mkvirtualenv --python=python3.10 myenv
+

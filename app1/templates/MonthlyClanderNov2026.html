@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Notes Calendar</title>
+
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: clamp(0.75rem, 2vw, 1.5rem);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            font-family: Arial, sans-serif;
+        }
+
+        h4 {
+            margin: 0;
+        }
+
+        .calendar-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .action-blocks {
+            display: flex;
+            flex: 0 0 auto;
+            gap: 0.5rem;
+        }
+
+        .action-blocks button {
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+        }
+
+        .save-status {
+            flex: 1;
+            margin: 0;
+            text-align: right;
+        }
+
+        .calendar-grid {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-rows: repeat(3, minmax(0, 1fr));
+            gap: clamp(0.5rem, 1vw, 1rem);
+        }
+
+        .month-calendar h2 {
+            margin: 0 0 0.25rem;
+            text-align: center;
+            font-size: clamp(0.9rem, 1.2vw, 1.25rem);
+        }
+
+        .month-calendar table {
+            width: 100%;
+            height: calc(100% - 1.5rem);
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+
+        .month-calendar th,
+        .month-calendar td {
+            border: 1px solid black;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
+        .month-calendar th {
+            padding: 0.2rem 0;
+            font-size: clamp(0.65rem, 0.8vw, 0.85rem);
+        }
+
+        .sunday-date,
+        .date-button.sunday-date {
+            color: #d00;
+        }
+
+        .month-calendar td {
+            vertical-align: top;
+            padding: clamp(0.1rem, 0.35vw, 0.3rem);
+            font-size: clamp(0.65rem, 0.8vw, 0.9rem);
+        }
+
+        .today {
+            background-color: #fff3b0;
+        }
+
+        .date-button {
+            flex: 1;
+            min-height: 1.5rem;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .date-button:hover,
+        .date-button:focus-visible {
+            background: #e8f0fe;
+            outline: 1px solid #5b86d6;
+        }
+
+        .date-cell-content {
+            display: flex;
+            align-items: stretch;
+            min-height: 1.5rem;
+        }
+
+        .note-markers {
+            display: flex;
+            gap: 2px;
+            padding: 2px 0;
+        }
+
+        .note-marker {
+            width: 3px;
+            border-radius: 2px;
+        }
+
+        .notes-dialog {
+            width: min(24rem, calc(100vw - 2rem));
+            max-height: min(80vh, 32rem);
+            padding: 1rem;
+            border: 1px solid #bbb;
+            border-radius: 0.5rem;
+        }
+
+        .notes-dialog::backdrop {
+            background: rgb(0 0 0 / 30%);
+        }
+
+        .notes-dialog h2 {
+            margin: 0 0 1rem;
+            font-size: 1.1rem;
+        }
+
+        .notes-list {
+            display: grid;
+            gap: 0.5rem;
+            margin: 0 0 1rem;
+            padding: 0;
+            list-style: none;
+        }
+
+        .notes-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .note-text {
+            flex: 1;
+            overflow-wrap: anywhere;
+        }
+
+        .note-entry {
+            display: flex;
+            align-items: stretch;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .note-entry[hidden] {
+            display: none;
+        }
+
+        .note-entry textarea {
+            flex: 1;
+            min-width: 0;
+            min-height: 5rem;
+            resize: vertical;
+        }
+
+        .note-entry-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .color-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .color-option {
+            width: 1.5rem;
+            height: 1.5rem;
+            padding: 0;
+            border: 2px solid transparent;
+            border-radius: 0.2rem;
+        }
+
+        .color-option[aria-pressed="true"] {
+            outline: 2px solid #222;
+            outline-offset: 2px;
+        }
+
+        .color-option:disabled {
+            cursor: not-allowed;
+            opacity: 0.3;
+        }
+
+        .dialog-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+
+        .notes-dialog button {
+            cursor: pointer;
+        }
+
+        @media (max-width: 900px) {
+            .calendar-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-rows: none;
+                grid-auto-rows: minmax(15rem, auto);
+            }
+        }
+
+        @media (max-width: 520px) {
+            .calendar-grid {
+                grid-template-columns: 1fr;
+                grid-auto-rows: minmax(16rem, auto);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="calendar-toolbar">
+        <h4 id="calendar-title">Daily Notes Calendar</h4>
+
+        <div class="action-blocks">
+            <button type="button" id="previous-year-button" aria-label="Previous year">◀</button>
+            <button type="button" id="next-year-button" aria-label="Next year">▶</button>
+            <form action="{% url 'myapphome' %}" method="get">
+                <button type="submit">Home 🛖</button>
+            </form>
+        </div>
+        <h4 id="calendar-year"></h4>
+        <p class="save-status" id="save-status" aria-live="polite">
+            Notes are saved automatically when added or removed.
+        </p>
+    </div>
+
+    <main class="calendar-grid" id="calendar-grid" aria-label="Monthly calendars"></main>
+
+    <div hidden>{% csrf_token %}</div>
+    {{ notes|json_script:"initial-notes" }}
+
+    <dialog class="notes-dialog" id="notes-dialog" aria-labelledby="notes-title">
+        <h2 id="notes-title"></h2>
+        <ul class="notes-list" id="notes-list"></ul>
+        <button type="button" id="add-note-button">Add</button>
+        <div class="note-entry" id="note-entry" hidden>
+            <div class="note-entry-content">
+                <div class="color-picker" id="color-picker" aria-label="Choose note color"></div>
+                <textarea id="note-input" aria-label="New note"></textarea>
+            </div>
+            <button type="button" id="confirm-note-button" aria-label="Add note">➜</button>
+        </div>
+        <div class="dialog-actions">
+            <button type="button" id="close-notes-button">Close</button>
+        </div>
+    </dialog>
+
+    <script>
+        let year = {{ calendar_year }};
+        const months = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+        const calendarGrid = document.getElementById("calendar-grid");
+        const notesDialog = document.getElementById("notes-dialog");
+        const notesTitle = document.getElementById("notes-title");
+        const notesList = document.getElementById("notes-list");
+        const noteEntry = document.getElementById("note-entry");
+        const noteInput = document.getElementById("note-input");
+        const colorPicker = document.getElementById("color-picker");
+        const saveStatus = document.getElementById("save-status");
+        const calendarYear = document.getElementById("calendar-year");
+        const calendarTitle = document.getElementById("calendar-title");
+        const notesByDate = new Map();
+        const dateCells = new Map();
+        const noteColors = [
+            "#e53935", "#fb8c00", "#fdd835", "#43a047", "#00acc1",
+            "#1e88e5", "#3949ab", "#8e24aa", "#d81b60", "#6d4c41"
+        ];
+        let activeDate = "";
+        let selectedNoteColor = noteColors[0];
+        const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+        calendarYear.textContent = year;
+        calendarTitle.textContent = `Daily Notes ~ ${year} Calendar`;
+        calendarGrid.setAttribute("aria-label", `${year} monthly calendars`);
+
+        document.getElementById("previous-year-button").addEventListener("click", () => {
+            if (year > 1) {
+                window.location.search = `?year=${year - 1}`;
+            }
+        });
+        document.getElementById("next-year-button").addEventListener("click", () => {
+            if (year < 9999) {
+                window.location.search = `?year=${year + 1}`;
+            }
+        });
+        document.getElementById("previous-year-button").disabled = year <= 1;
+        document.getElementById("next-year-button").disabled = year >= 9999;
+
+        JSON.parse(document.getElementById("initial-notes").textContent).forEach((note) => {
+            const notes = notesByDate.get(note.date) || [];
+            notes.push(note);
+            notesByDate.set(note.date, notes);
+        });
+
+        function renderColorPicker() {
+            const usedColors = new Set((notesByDate.get(activeDate) || []).map((note) => note.color));
+            const availableColors = noteColors.filter((color) => !usedColors.has(color));
+
+            if (!availableColors.includes(selectedNoteColor)) {
+                selectedNoteColor = availableColors[0] || noteColors[0];
+            }
+
+            colorPicker.replaceChildren();
+            noteColors.forEach((color, colorIndex) => {
+                const colorButton = document.createElement("button");
+                colorButton.type = "button";
+                colorButton.className = "color-option";
+                colorButton.style.backgroundColor = color;
+                colorButton.disabled = usedColors.has(color);
+                colorButton.setAttribute("aria-label", `Color ${colorIndex + 1}`);
+                colorButton.setAttribute("aria-pressed", String(color === selectedNoteColor));
+                colorButton.title = color;
+                colorButton.addEventListener("click", () => {
+                    selectedNoteColor = color;
+                    renderColorPicker();
+                });
+                colorPicker.appendChild(colorButton);
+            });
+        }
+
+        function renderNotes() {
+            notesList.replaceChildren();
+            const noteDate = activeDate;
+
+            (notesByDate.get(noteDate) || []).forEach((note) => {
+                const item = document.createElement("li");
+                const noteText = document.createElement("span");
+                noteText.className = "note-text";
+                noteText.textContent = `• ${note.text}`;
+                noteText.style.borderLeft = `3px solid ${note.color}`;
+                noteText.style.paddingLeft = "0.5rem";
+
+                const removeButton = document.createElement("button");
+                removeButton.type = "button";
+                removeButton.textContent = "−";
+                removeButton.setAttribute("aria-label", `Remove note: ${note.text}`);
+                removeButton.addEventListener("click", async () => {
+                    removeButton.disabled = true;
+                    try {
+                        const response = await fetch(`/project1/daily-notes/${note.id}/delete/`, {
+                            method: "POST",
+                            headers: { "X-CSRFToken": csrfToken }
+                        });
+                        if (!response.ok) {
+                            throw new Error("Could not delete the note. Please try again.");
+                        }
+
+                        const notes = notesByDate.get(noteDate);
+                        const noteIndex = notes.findIndex((existingNote) => existingNote.id === note.id);
+                        if (noteIndex !== -1) {
+                            notes.splice(noteIndex, 1);
+                        }
+                        if (activeDate === noteDate) {
+                            renderNotes();
+                        }
+                        renderDateMarkers(noteDate);
+                        saveStatus.textContent = "Note deleted.";
+                    } catch (error) {
+                        window.alert(error.message);
+                        removeButton.disabled = false;
+                    }
+                });
+
+                item.append(noteText, removeButton);
+                notesList.appendChild(item);
+            });
+        }
+
+        function renderDateMarkers(dateKey) {
+            const markers = dateCells.get(dateKey);
+            if (!markers) {
+                return;
+            }
+
+            markers.replaceChildren();
+            (notesByDate.get(dateKey) || []).forEach((note) => {
+                const marker = document.createElement("span");
+                marker.className = "note-marker";
+                marker.style.backgroundColor = note.color;
+                marker.setAttribute("aria-hidden", "true");
+                markers.appendChild(marker);
+            });
+        }
+
+        document.getElementById("add-note-button").addEventListener("click", () => {
+            if ((notesByDate.get(activeDate) || []).length >= noteColors.length) {
+                window.alert("Adjust new notes in other notes");
+                return;
+            }
+
+            renderColorPicker();
+            noteEntry.hidden = false;
+            noteInput.focus();
+        });
+
+        document.getElementById("confirm-note-button").addEventListener("click", async () => {
+            const note = noteInput.value.trim();
+            const noteDate = activeDate;
+            if (!note) {
+                noteInput.focus();
+                return;
+            }
+
+            const notes = notesByDate.get(noteDate) || [];
+            if (notes.length >= noteColors.length) {
+                window.alert("Adjust new notes in other notes");
+                return;
+            }
+
+            if (notes.some((existingNote) => existingNote.color === selectedNoteColor)) {
+                renderColorPicker();
+                return;
+            }
+
+            const confirmButton = document.getElementById("confirm-note-button");
+            confirmButton.disabled = true;
+            try {
+                const response = await fetch("{% url 'create_daily_note' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify({
+                        date: noteDate,
+                        text: note,
+                        color: selectedNoteColor
+                    })
+                });
+                const savedNote = await response.json();
+                if (!response.ok) {
+                    throw new Error(savedNote.error || "Could not save the note. Please try again.");
+                }
+
+                notes.push(savedNote);
+                notesByDate.set(noteDate, notes);
+                if (activeDate === noteDate) {
+                    noteInput.value = "";
+                    noteEntry.hidden = true;
+                    renderNotes();
+                }
+                renderDateMarkers(noteDate);
+                saveStatus.textContent = "Note saved.";
+            } catch (error) {
+                window.alert(error.message);
+            } finally {
+                confirmButton.disabled = false;
+            }
+        });
+
+        document.getElementById("close-notes-button").addEventListener("click", () => {
+            notesDialog.close();
+        });
+
+        months.forEach((month, monthIndex) => {
+            const monthSection = document.createElement("section");
+            monthSection.className = "month-calendar";
+
+            const heading = document.createElement("h2");
+            heading.textContent = month;
+            monthSection.appendChild(heading);
+
+            const table = document.createElement("table");
+            table.setAttribute("aria-label", `${month} ${year}`);
+
+            const tableHead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+            weekdays.forEach((weekday, weekdayIndex) => {
+                const headingCell = document.createElement("th");
+                headingCell.scope = "col";
+                headingCell.textContent = weekday;
+                if (weekdayIndex === 6) {
+                    headingCell.className = "sunday-date";
+                }
+                headerRow.appendChild(headingCell);
+            });
+            tableHead.appendChild(headerRow);
+            table.appendChild(tableHead);
+
+            const tableBody = document.createElement("tbody");
+            const firstDay = new Date(0);
+            firstDay.setFullYear(year, monthIndex, 1);
+            firstDay.setHours(0, 0, 0, 0);
+            const lastDay = new Date(0);
+            lastDay.setFullYear(year, monthIndex + 1, 0);
+            const firstWeekday = (firstDay.getDay() + 6) % 7;
+            const daysInMonth = lastDay.getDate();
+            const weeksInMonth = Math.ceil((firstWeekday + daysInMonth) / 7);
+            let day = 1;
+
+            for (let week = 0; week < weeksInMonth; week += 1) {
+                const row = document.createElement("tr");
+
+                for (let weekday = 0; weekday < 7; weekday += 1) {
+                    const cell = document.createElement("td");
+                    const date = week * 7 + weekday - firstWeekday + 1;
+
+                    if (date > 0 && date <= daysInMonth) {
+                        const cellDay = day;
+                        const dateKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(cellDay).padStart(2, "0")}`;
+                        const dateContent = document.createElement("div");
+                        dateContent.className = "date-cell-content";
+                        const dateButton = document.createElement("button");
+                        dateButton.type = "button";
+                        dateButton.className = "date-button";
+                        dateButton.textContent = cellDay;
+                        if (weekday === 6) {
+                            dateButton.classList.add("sunday-date");
+                        }
+                        if (dateKey === todayKey) {
+                            cell.classList.add("today");
+                            dateButton.setAttribute("aria-current", "date");
+                        }
+                        const markers = document.createElement("span");
+                        markers.className = "note-markers";
+                        dateCells.set(dateKey, markers);
+                        cell.setAttribute("aria-label", `${month} ${cellDay}, ${year}`);
+                        dateButton.addEventListener("click", () => {
+                            activeDate = dateKey;
+                            notesTitle.textContent = `${month} ${cellDay}, ${year}`;
+                            noteInput.value = "";
+                            noteEntry.hidden = true;
+                            selectedNoteColor = noteColors[0];
+                            renderNotes();
+                            notesDialog.showModal();
+                        });
+                        dateContent.append(dateButton, markers);
+                        cell.appendChild(dateContent);
+                        day += 1;
+                    }
+
+                    row.appendChild(cell);
+                }
+
+                tableBody.appendChild(row);
+            }
+
+            table.appendChild(tableBody);
+            monthSection.appendChild(table);
+            calendarGrid.appendChild(monthSection);
+        });
+
+        notesByDate.forEach((notes, dateKey) => {
+            renderDateMarkers(dateKey);
+        });
+    </script>
+</body>
+
+</html>
