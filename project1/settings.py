@@ -27,7 +27,7 @@ DEBUG = True
 # '192.168.1.9'
 # py manage.py runserver 192.168.1.9:8000 --- command to run on terminal to access on android
 # check ip again and again it will change on different network
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
